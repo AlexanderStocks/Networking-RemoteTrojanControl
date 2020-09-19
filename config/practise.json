@@ -11,7 +11,14 @@
   },
   {
     "module" : "Screenshotter"
+  },
+  {
+    "module" : "ExecuteShell"
+  },
+  {
+    "module" : "DetectSandbox"
   }
+
 
 
 
